@@ -43,7 +43,7 @@ async function isDirectory(filePath) {
 // Core Functions
 async function fetchSitemap() {
   try {
-    await clearFolder(outputFolder, ['.htaccess', 'robots.txt', sitemapFileName]);
+    await clearFolder(outputFolder, ['404.html','.htaccess', 'robots.txt', sitemapFileName]);
     const response = await axios.get(sitemapUrl);
 
     const parser = new xml2js.Parser();
