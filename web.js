@@ -130,9 +130,9 @@ async function fetchResourceLinksAndUpdateSitemap(pagePath = '/resources', creat
     const dom = new JSDOM(response.data);
 
     const linkElements = dom.window.document.querySelectorAll('a[href]');
-    const internalLinks = Array.from(linkElements)
+    const internalLinks = [...new Set(Array.from(linkElements)
       .map(el => el.getAttribute('href'))
-      .filter(href => href.startsWith('/') && !href.startsWith('//')); // Only relative internal links
+      .filter(href => href.startsWith('/') && !href.startsWith('//')))]; // Unique relative internal links
 
     console.log(`Found internal links on ${pagePath}:`, internalLinks);
 
