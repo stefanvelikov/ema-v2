@@ -315,6 +315,7 @@ const urlsToRemove = [
 // Main Process
 async function processSitemapAndResources() {
   await fetchSitemap();
+  await fetchResourceLinksAndUpdateSitemap('/', ['/projects']);
   await fetchResourceLinksAndUpdateSitemap('/projects', ['/projects']);
   await moveAndRenameResourcesFile(outputFolder, 'projects.html', 'projects');
 
