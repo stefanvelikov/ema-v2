@@ -69,7 +69,20 @@ async function fetchSitemap() {
       await fetchAndSaveContent(url.loc[0]);
     }
   } catch (error) {
-    console.error('Error fetching or processing sitemap:', error.message);
+    if (error.response?.status === 404) {
+      console.warn(`Sitemap unavailable at ${sitemapUrl}; building one from /projects links.`);
+      await fs.mkdir(outputFolder, { recursive: true });
+      const fallbackSitemap = new xml2js.Builder().buildObject({
+        urlset: {
+          $: { xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9' },
+          url: [{ loc: [processingDomain + '/'] }],
+        },
+      });
+      await fs.writeFile(path.join(outputFolder, sitemapFileName), fallbackSitemap);
+      await fetchAndSaveContent(processingDomain + '/');
+      return;
+    }
+    throw error;
   }
 }
 
@@ -117,9 +130,9 @@ async function fetchResourceLinksAndUpdateSitemap(pagePath = '/resources', creat
     const dom = new JSDOM(response.data);
 
     const linkElements = dom.window.document.querySelectorAll('a[href]');
-    const internalLinks = Array.from(linkElements)
+    const internalLinks = [...new Set(Array.from(linkElements)
       .map(el => el.getAttribute('href'))
-      .filter(href => href.startsWith('/') && !href.startsWith('//')); // Only relative internal links
+      .filter(href => href.startsWith('/') && !href.startsWith('//')))]; // Unique relative internal links
 
     console.log(`Found internal links on ${pagePath}:`, internalLinks);
 
@@ -302,13 +315,13 @@ const urlsToRemove = [
 // Main Process
 async function processSitemapAndResources() {
   await fetchSitemap();
+  await fetchResourceLinksAndUpdateSitemap('/', ['/projects']);
   await fetchResourceLinksAndUpdateSitemap('/projects', ['/projects']);
-  moveAndRenameResourcesFile(outputFolder, 'projects.html', 'projects');
+  await moveAndRenameResourcesFile(outputFolder, 'projects.html', 'projects');
 
   await fixSitemapDomains();
   await removeExactUrlsFromSitemap(urlsToRemove);
   await addLinksToSitemapAtTop(newLinks);
-  await moveAndRenameResourcesFile();
 }
 
 processSitemapAndResources();
